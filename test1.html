@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ohio School Disrict Real Funding</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+  <h2 style="font-family: Overpass, sans-serif;text-align: center;">Select a School District:</h2>
+
+  <select id="dataSelect" style="display: block; margin: 0 auto;"></select>
+
+  <canvas id="myChart" width="400" height="200"></canvas>
+
+  <script>
+    let chart;
+    let parsedData = {};
+
+    function createChart(labels, data) {
+      const ctx = document.getElementById('myChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Values',
+            data: data,
+            borderColor: 'blue',
+            tension: 0.1
+          }]
+        },
+        options: {
+  scales: {
+    y: {
+      ticks: {
+        callback: function(value) {
+          return '$' + value;
+        }
+      },
+      title: {
+        display: true,
+        text: 'Value'
+      }
+    }
+  }
+}
+      });
+    }
+
+    function updateChart(data) {
+      chart.data.datasets[0].data = data;
+      chart.update();
+    }
+
+    function loadCSV() {
+      fetch('data.csv')
+        .then(response => response.text())
+        .then(csv => {
+          const result = Papa.parse(csv, { header: true });
+          const labels = Object.keys(result.data[0]).slice(1);
+
+          result.data.forEach(row => {
+            if (row.District) {
+              parsedData[row.District] = labels.map(label => parseFloat(row[label]));
+            }
+          });
+
+          const dropdown = document.getElementById('dataSelect');
+          Object.keys(parsedData).forEach(District => {
+            const option = document.createElement('option');
+            option.value = District;
+            option.textContent = District;
+            dropdown.appendChild(option);
+          });
+
+          createChart(labels, parsedData[dropdown.value]);
+
+          dropdown.addEventListener('change', function () {
+            updateChart(parsedData[this.value]);
+          });
+        });
+    }
+
+    loadCSV();
+  </script>
+</body>
+</html>
